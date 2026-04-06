@@ -26,25 +26,25 @@ def home():
     params = []
 
     if query:
-        sql += " AND title LIKE %s"
+        sql += " AND title LIKE ?"
         params.append("%" + query + "%")
 
     if state:
-        sql += " AND state LIKE %s"
+        sql += " AND state LIKE ?"
         params.append("%" + state + "%")
 
     if category:
-        sql += " AND category LIKE %s"
+        sql += " AND category LIKE ?"
         params.append("%" + category + "%")
 
     if status:
-        sql += " AND status LIKE %s"
+        sql += " AND status LIKE ?"
         params.append("%" + status + "%")
 
-    sql += " LIMIT %s OFFSET %s"
+    sql += " LIMIT ? OFFSET ?"
     params.extend([limit, offset])
 
-    cursor.execute(sql, tuple(params))
+    cursor.execute(sql, params)
     data = cursor.fetchall()
 
     # 🔥 Dropdown values
