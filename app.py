@@ -7,7 +7,48 @@ def get_db_connection():
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     return conn
+def init_db():
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS projects (
+        project_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        source TEXT,
+        url TEXT,
+        state TEXT,
+        category TEXT,
+        country TEXT,
+        status TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+def seed_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM projects")
+    count = cursor.fetchone()[0]
+
+    if count == 0:
+        cursor.execute("""
+        INSERT INTO projects (title, source, url, state, category, country, status)
+        VALUES
+        ('Pratham', 'Education NGO', 'https://pratham.org', 'delhi', 'education', 'india', 'active'),
+        ('Goonj', 'Rural NGO', 'https://goonj.org', 'delhi', 'social', 'india', 'active'),
+        ('Akshaya Patra', 'Midday Meals', 'https://akshayapatra.org', 'karnataka', 'food', 'india', 'active'),
+        ('Teach For India', 'Education NGO', 'https://teachforindia.org', 'maharashtra', 'education', 'india', 'active')
+        """)
+        conn.commit()
+
+    conn.close()
+init_db()
+seed_data()
 # 🔍 HOME + FILTER
 @app.route("/")
 @app.route("/home")
@@ -72,7 +113,7 @@ def project_detail(id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM projects WHERE project_id = %s", (id,))
+    cursor.execute("SELECT * FROM projects WHERE project_id = ?", (id,))
     project = cursor.fetchone()
 
     cursor.close()
@@ -94,7 +135,7 @@ def add_project():
     cursor = conn.cursor()
 
     cursor.execute(
-        "INSERT INTO projects (title, source, url, state, category, country, status) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        "INSERT INTO projects (title, source, url, state, category, country, status) VALUES (?,?,?,?,?,?,?)",
         (title, source, url, state, category, country, status)
     )
 
@@ -119,8 +160,8 @@ def edit_project(id):
 
         cursor.execute(
             """UPDATE projects 
-               SET title=%s, source=%s, url=%s, state=%s, category=%s, country=%s, status=%s 
-               WHERE project_id=%s""",
+               SET title=?, source=?, url=?, state=?, category=?, country=?, status=? 
+               WHERE project_id=?""",
             (title, source, url, state, category, country, status, id)
         )
         conn.commit()
@@ -129,7 +170,7 @@ def edit_project(id):
         conn.close()
         return redirect("/home")
 
-    cursor.execute("SELECT * FROM projects WHERE project_id=%s", (id,))
+    cursor.execute("SELECT * FROM projects WHERE project_id=?", (id,))
     project = cursor.fetchone()
 
     cursor.close()
