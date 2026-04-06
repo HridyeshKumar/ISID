@@ -1,15 +1,12 @@
 from flask import Flask, request, render_template, redirect
-import mysql.connector
+import sqlite3
 
 app = Flask(__name__)
 
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Hridyesh@123",
-        database="isid_db"
-    )
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
 # 🔍 HOME + FILTER
 @app.route("/")
