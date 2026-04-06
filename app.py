@@ -183,11 +183,11 @@ def dashboard():
     cursor = conn.cursor()
 
     # NGOs per state
-    cursor.execute("SELECT state, COUNT(*) FROM projects GROUP BY state")
+    cursor.execute("SELECT state, COUNT(*) as count FROM projects GROUP BY state")
     state_data = [dict(row) for row in cursor.fetchall()]
 
     # NGOs per category
-    cursor.execute("SELECT category, COUNT(*) FROM projects GROUP BY category")
+    cursor.execute("SELECT category, COUNT(*) as count FROM projects GROUP BY category")
     category_data = [dict(row) for row in cursor.fetchall()]
 
     cursor.close()
