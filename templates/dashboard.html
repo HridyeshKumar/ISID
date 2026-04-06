@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>Analytics Dashboard</h1>
+
+<canvas id="stateChart" width="400" height="200"></canvas>
+<br><br>
+<canvas id="categoryChart" width="400" height="200"></canvas>
+
+<br>
+<a href="/home">Back to Home</a>
+
+<script type="application/json" id="stateData">{{ state_data | tojson }}</script>
+<script type="application/json" id="categoryData">{{ category_data | tojson }}</script>
+
+<script>
+    // 🔥 Data from Flask
+    const stateData = JSON.parse(document.getElementById('stateData').textContent);
+    const categoryData = JSON.parse(document.getElementById('categoryData').textContent);
+
+    const stateLabels = stateData.map(item => item[0]);
+    const stateValues = stateData.map(item => item[1]);
+
+    const categoryLabels = categoryData.map(item => item[0]);
+    const categoryValues = categoryData.map(item => item[1]);
+
+    // 📊 State Chart
+    new Chart(document.getElementById("stateChart"), {
+        type: 'bar',
+        data: {
+            labels: stateLabels,
+            datasets: [{
+                label: 'NGOs by State',
+                data: stateValues
+            }]
+        }
+    });
+
+    // 📊 Category Chart
+    new Chart(document.getElementById("categoryChart"), {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: 'NGOs by Category',
+                data: categoryValues
+            }]
+        }
+    });
+</script>
+
+</body>
+</html>

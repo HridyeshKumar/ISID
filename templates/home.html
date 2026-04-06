@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ISID</title>
+    <a href="/dashboard">📊 View Dashboard</a>
+</head>
+<body>
+
+<h1>ISID - Indian Social Innovation Database</h1>
+
+<!-- 🔍 FILTER FORM -->
+<form method="GET" action="/home">
+
+    <input type="text" name="q" placeholder="Search NGOs...">
+
+    <!-- State -->
+    <select name="state">
+        <option value="">All States</option>
+        {% for s in states %}
+        <option value="{{ s }}" {% if request.args.get('state') == s %}selected{% endif %}>
+            {{ s.title() }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Category -->
+    <select name="category">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+        <option value="{{ c }}" {% if request.args.get('category') == c %}selected{% endif %}>
+            {{ c.title() }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <!-- Status -->
+    <select name="status">
+        <option value="">All Status</option>
+        <option value="active" {% if request.args.get('status') == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if request.args.get('status') == 'inactive' %}selected{% endif %}>Inactive</option>
+    </select>
+
+    <button type="submit">Search</button>
+</form>
+
+<hr>
+
+<!-- ➕ ADD NGO -->
+<h2>Add NGO</h2>
+
+<form method="POST" action="/add_project">
+    <input type="text" name="title" placeholder="NGO Name" required>
+    <input type="text" name="source" placeholder="Description" required>
+    <input type="text" name="url" placeholder="Website" required>
+    <input type="text" name="state" placeholder="State" required>
+    <input type="text" name="category" placeholder="Category" required>
+    <input type="text" name="country" placeholder="Country" required>
+    <input type="text" name="status" placeholder="Status" required>
+    <button type="submit">Add</button>
+</form>
+
+<hr>
+
+<!-- 📊 DISPLAY NGOs -->
+<h2>NGOs</h2>
+
+{% for project in data %}
+<div style="border:1px solid #ccc; padding:15px; margin:10px; border-radius:10px;">
+    
+    <h3>
+        <a href="/project/{{ project[0] }}">
+            {{ project[1] }}
+        </a>
+    </h3>
+    <p>{{ project[2] }}</p>
+
+    <p><b>State:</b> {{ project[4].title() }}</p>
+    <p><b>Category:</b> {{ project[5].title() }}</p>
+    <p><b>Status:</b> {{ project[7].title() }}</p>
+
+    <a href="{{ project[3] }}" target="_blank">Visit Website</a>
+    <br><br>
+
+    <a href="/edit/{{ project[0] }}">Edit</a> |
+    <a href="/delete/{{ project[0] }}" onclick="return confirm('Delete?')">Delete</a>
+</div>
+{% endfor %}
+<br><br>
+
+{% if page > 1 %}
+<a href="/home?page={{ page - 1 }}&state={{ request.args.get('state','') }}&category={{ request.args.get('category','') }}&status={{ request.args.get('status','') }}">⬅ Previous</a>
+{% endif %}
+
+&nbsp;&nbsp;
+<strong>Page {{ page }}</strong>
+
+&nbsp;&nbsp;
+
+<a href="/home?page={{ page + 1 }}&state={{ request.args.get('state','') }}&category={{ request.args.get('category','') }}&status={{ request.args.get('status','') }}">Next ➡</a>
+</body>
+</html>

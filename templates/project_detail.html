@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Project Detail</title>
+</head>
+<body>
+
+<h1>{{ project[1] }}</h1>
+
+<p><b>Description:</b> {{ project[2] }}</p>
+<p><b>State:</b> {{ project[4].title() }}</p>
+<p><b>Category:</b> {{ project[5].title() }}</p>
+<p><b>Country:</b> {{ project[6].title() }}</p>
+<p><b>Status:</b> {{ project[7].title() }}</p>
+
+<p>
+    <a href="{{ project[3] }}" target="_blank">Visit Website</a>
+</p>
+
+<br>
+<a href="/home">⬅ Back to Home</a>
+
+</body>
+</html>

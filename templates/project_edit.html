@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit NGO</title>
+</head>
+<body>
+
+<h2>Edit NGO</h2>
+
+<form method="POST">
+    <input type="text" name="title" value="{{ project[1] }}"><br><br>
+    <input type="text" name="source" value="{{ project[2] }}"><br><br>
+    <input type="text" name="url" value="{{ project[3] }}"><br><br>
+    <input type="text" name="state" value="{{ project[4] }}"><br><br>
+    <input type="text" name="category" value="{{ project[5] }}"><br><br>
+    <input type="text" name="country" value="{{ project[6] }}"><br><br>
+    <input type="text" name="status" value="{{ project[7] }}"><br><br>
+
+    <button type="submit">Update</button>
+</form>
+
+<br>
+<a href="/home">Back</a>
+
+</body>
+</html>
