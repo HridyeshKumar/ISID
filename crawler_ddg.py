@@ -1,33 +1,41 @@
-from duckduckgo_search import DDGS
+import os
+os.environ["DDGS_HEADERS"] = "Mozilla/5.0"
+
+from ddgs import DDGS
 import sqlite3
 
 def get_db_connection():
     return sqlite3.connect("database.db")
 
 queries = [
-    "education NGO in india",
-    "health NGO in delhi",
-    "women empowerment NGO india",
-    "rural development NGO india"
+    "education NGO India",
+    "health NGO Delhi",
+    "women empowerment NGO India",
+    "rural development NGO India"
 ]
 
 websites = set()
 
 with DDGS() as ddgs:
     for q in queries:
-        results = ddgs.text(q, max_results=50)
+        print(f"Searching: {q}")
+
+        results = ddgs.text(q, max_results=20)
 
         for r in results:
-            link = r["href"]
+            link = r.get("href")
 
-            if any(x in link for x in ["facebook","twitter","linkedin","youtube",".pdf"]):
+            if not link:
+                continue
+
+            if any(x in link for x in ["facebook", "twitter", "linkedin", "youtube", ".pdf"]):
                 continue
 
             websites.add(link)
 
 print("Total websites found:", len(websites))
 
-# 🔥 STORE IN DB
+# 🔥 STORE
 conn = get_db_connection()
 cursor = conn.cursor()
 

@@ -1,27 +1,27 @@
-def calculate_score(title, category, state):
-    score = 0
+import sqlite3
+from scoring import calculate_score
 
-    # category importance
-    if category == "education":
-        score += 3
-    elif category == "health":
-        score += 3
-    elif category == "women":
-        score += 2
-    elif category == "environment":
-        score += 2
-    else:
-        score += 1
+conn = sqlite3.connect("database.db")
+cursor = conn.cursor()
 
-    # state impact (example logic)
-    if state in ["bihar", "uttar pradesh"]:
-        score += 2
+cursor.execute("SELECT project_id, title, category, url FROM projects")
+rows = cursor.fetchall()
 
-    # keyword boost
-    text = title.lower()
-    if "rural" in text:
-        score += 2
-    if "foundation" in text:
-        score += 1
+updated = 0
 
-    return score
+for project_id, title, category, url in rows:
+    description = ""  # (we’ll improve this later)
+
+    score = calculate_score(title, category, description)
+
+    cursor.execute(
+        "UPDATE projects SET score = ? WHERE project_id = ?",
+        (score, project_id)
+    )
+
+    updated += 1
+
+conn.commit()
+conn.close()
+
+print("✅ Scored:", updated)
