@@ -1,25 +1,35 @@
 import pandas as pd
-import mysql.connector
+import sqlite3
 
-df = pd.read_csv("ngo_data.csv")
+df = pd.read_csv("ngo_dataset.csv")
 
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="Hridyesh@123",
-    database="isid_db"
-)
-
+conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
 
+inserted = 0
+
 for _, row in df.iterrows():
-    cursor.execute(
-        "INSERT INTO projects (title, source, url, state, category, country, status) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-        tuple(row)
-    )
+    # avoid duplicates
+    cursor.execute("SELECT 1 FROM projects WHERE title = ?", (row["title"],))
+    if cursor.fetchone():
+        continue
+
+    cursor.execute("""
+        INSERT INTO projects (title, source, url, state, category, country, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        row["title"],
+        row["source"],
+        row["url"],
+        row["state"],
+        row["category"],
+        row["country"],
+        row["status"]
+    ))
+
+    inserted += 1
 
 conn.commit()
-cursor.close()
 conn.close()
 
-print("CSV data inserted!")
+print("✅ Inserted:", inserted)

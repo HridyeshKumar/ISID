@@ -63,7 +63,7 @@ def home():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    sql = "SELECT * FROM projects WHERE 1=1"
+    sql = "SELECT * FROM projects ORDER BY score DESC"
     params = []
 
     if query:
