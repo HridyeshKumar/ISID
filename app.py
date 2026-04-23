@@ -1,11 +1,12 @@
 from flask import Flask, request, render_template, redirect
 import sqlite3
+from semantic_search import search,get_similar_projects,build_cache
 
 app = Flask(__name__)
 
 # ---------------- DB CONNECTION ----------------
 def get_db_connection():
-    conn = sqlite3.connect("database.db")
+    conn = sqlite3.connect("database.db", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -59,7 +60,6 @@ def seed_data():
 def calculate_score(category, state, title):
     score = 0
 
-    # Category weight
     weights = {
         "education": 30,
         "food": 25,
@@ -68,13 +68,11 @@ def calculate_score(category, state, title):
     }
     score += weights.get(category, 10)
 
-    # State importance
     high_priority_states = ["delhi", "maharashtra", "karnataka"]
     if state in high_priority_states:
         score += 10
 
-    # 🔥 Keyword intelligence
-    title = title.lower()
+    title = (title or "").lower()
 
     keywords = {
         "child": 10,
@@ -93,6 +91,8 @@ def calculate_score(category, state, title):
             score += value
 
     return score
+
+
 def recalculate_all_scores():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -110,10 +110,18 @@ def recalculate_all_scores():
 
     conn.commit()
     conn.close()
-# Initialize DB
+
+
+# INIT
 init_db()
 seed_data()
 recalculate_all_scores()
+# 🔥 BUILD CACHE
+try:
+    print("🔄 Initializing AI search cache...")
+    build_cache()
+except Exception as e:
+    print("⚠️ Cache build failed:", e)
 # ---------------- HOME + FILTER ----------------
 @app.route("/")
 @app.route("/home")
@@ -139,19 +147,36 @@ def home():
         params.append(int(min_score))
 
     if query:
-        sql += " AND title LIKE ?"
-        params.append("%" + query + "%")
+        results = search(query)
+        data = [r[1] for r in results]
+
+        # still need dropdowns
+        cursor.execute("SELECT DISTINCT state FROM projects")
+        states = sorted([row[0] for row in cursor.fetchall() if row[0]])
+
+        cursor.execute("SELECT DISTINCT category FROM projects")
+        categories = sorted([row[0] for row in cursor.fetchall() if row[0]])
+
+        conn.close()
+
+        return render_template(
+            "home.html",
+            data=data,
+            states=states,
+            categories=categories,
+            page=1
+        )
 
     if state:
-        sql += " AND state LIKE ?"
+        sql += " AND LOWER(state) LIKE ?"
         params.append("%" + state + "%")
 
     if category:
-        sql += " AND category LIKE ?"
+        sql += " AND LOWER(category) LIKE ?"
         params.append("%" + category + "%")
 
     if status:
-        sql += " AND status LIKE ?"
+        sql += " AND LOWER(status) LIKE ?"
         params.append("%" + status + "%")
 
     sql += " ORDER BY score DESC LIMIT ? OFFSET ?"
@@ -160,14 +185,12 @@ def home():
     cursor.execute(sql, params)
     data = cursor.fetchall()
 
-    # Dropdown values
     cursor.execute("SELECT DISTINCT state FROM projects")
     states = sorted([row[0] for row in cursor.fetchall() if row[0]])
 
     cursor.execute("SELECT DISTINCT category FROM projects")
     categories = sorted([row[0] for row in cursor.fetchall() if row[0]])
 
-    cursor.close()
     conn.close()
 
     return render_template(
@@ -188,10 +211,20 @@ def project_detail(id):
     cursor.execute("SELECT * FROM projects WHERE project_id = ?", (id,))
     project = cursor.fetchone()
 
-    cursor.close()
     conn.close()
 
-    return render_template("project_detail.html", project=project)
+    if not project:
+        return "Project not found", 404
+
+    # 🔥 AI recommendations
+    results = get_similar_projects(id)
+    recommendations = [r[1] for r in results]
+
+    return render_template(
+        "project_detail.html",
+        project=project,
+        recommendations=recommendations
+    )
 
 
 # ---------------- ADD PROJECT ----------------
@@ -218,7 +251,6 @@ def add_project():
     )
 
     conn.commit()
-    cursor.close()
     conn.close()
 
     return redirect("/home")
@@ -239,7 +271,7 @@ def edit_project(id):
         country = request.form["country"].lower()
         status = request.form["status"].lower()
 
-        score = calculate_score(category, state)
+        score = calculate_score(category, state, title)  # ✅ FIXED
 
         cursor.execute(
             """UPDATE projects 
@@ -249,7 +281,6 @@ def edit_project(id):
         )
 
         conn.commit()
-        cursor.close()
         conn.close()
 
         return redirect("/home")
@@ -257,7 +288,6 @@ def edit_project(id):
     cursor.execute("SELECT * FROM projects WHERE project_id=?", (id,))
     project = cursor.fetchone()
 
-    cursor.close()
     conn.close()
 
     return render_template("project_edit.html", project=project)
@@ -280,21 +310,43 @@ def top_projects():
     conn.close()
 
     return render_template("home.html", data=data)
+@app.route("/delete/<int:id>")
+def delete_project(id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    cursor.execute("DELETE FROM projects WHERE project_id=?", (id,))
+    conn.commit()
+    conn.close()
 
+    return redirect("/home")
+@app.route("/rebuild-cache")
+def rebuild_cache():
+    from semantic_search import build_cache
+    build_cache()
+    return "Cache rebuilt successfully!"
 # ---------------- DASHBOARD ----------------
 @app.route("/dashboard")
 def dashboard():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT state, COUNT(*) as count FROM projects GROUP BY state")
+    cursor.execute("""
+        SELECT state, COUNT(*) as count 
+        FROM projects 
+        GROUP BY state 
+        ORDER BY count DESC
+    """)
     state_data = [dict(row) for row in cursor.fetchall()]
 
-    cursor.execute("SELECT category, COUNT(*) as count FROM projects GROUP BY category")
+    cursor.execute("""
+        SELECT category, COUNT(*) as count 
+        FROM projects 
+        GROUP BY category 
+        ORDER BY count DESC
+    """)
     category_data = [dict(row) for row in cursor.fetchall()]
 
-    cursor.close()
     conn.close()
 
     return render_template(
@@ -306,4 +358,4 @@ def dashboard():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000)

@@ -8,7 +8,7 @@ from scoring import calculate_score
 # ---------------- LOAD DATA ----------------
 df = pd.read_csv("ngo_dataset.csv")
 
-# Clean column names (avoid hidden issues)
+# Clean column names
 df.columns = df.columns.str.strip().str.lower()
 
 
@@ -20,38 +20,43 @@ inserted = 0
 skipped = 0
 
 
-# ---------------- INSERT LOOP ----------------
-for _, row in df.iterrows():
-    # Safe extraction (handle missing values)
-    title = str(row.get("title", "")).strip()
-    source = str(row.get("source", "dataset")).strip()
-    url = str(row.get("url", "")).strip()
-    state = str(row.get("state", "india")).lower().strip()
-    category = str(row.get("category", "")).lower().strip()
-    country = str(row.get("country", "india")).lower().strip()
-    status = str(row.get("status", "active")).lower().strip()
+# ---------------- VALID CATEGORIES ----------------
+valid_categories = ["education", "health", "social", "environment", "food"]
 
-    # Skip empty titles
+
+# ---------------- INSERT LOOP ----------------
+for row in df.itertuples(index=False):
+
+    # SAFE extraction
+    title = str(getattr(row, "title", "")).strip()
+    source = str(getattr(row, "source", "dataset")).strip()
+    url = str(getattr(row, "url", "")).strip()
+    state = str(getattr(row, "state", "india")).lower().strip()
+    category = str(getattr(row, "category", "")).lower().strip()
+    country = str(getattr(row, "country", "india")).lower().strip()
+    status = str(getattr(row, "status", "active")).lower().strip()
+
     if not title:
         skipped += 1
         continue
 
-    # 🔥 Duplicate check (title + url)
-    cursor.execute(
-        "SELECT 1 FROM projects WHERE title = ? OR url = ?",
-        (title, url)
-    )
+    # 🔥 STRONG DUPLICATE CHECK
+    cursor.execute("""
+        SELECT 1 FROM projects 
+        WHERE LOWER(title)=? OR url=?
+    """, (title.lower(), url))
+
     if cursor.fetchone():
         skipped += 1
         continue
 
-    # 🔥 AI Category (if missing or bad)
-    valid_categories = ["education", "health", "social", "environment", "food"]
+    # 🔥 CATEGORY FIX
     if category not in valid_categories:
-        category = predict_category(title)
+        text = f"{title} {source}"
+        category = predict_category(text)
 
-    # 🔥 Score
-    score = calculate_score(title, category, "")
+    # 🔥 SCORE (FIXED)
+    score = calculate_score(category, state, title, source)
 
     try:
         cursor.execute("""
@@ -71,9 +76,8 @@ for _, row in df.iterrows():
 
         inserted += 1
 
-        # Progress log
         if inserted % 100 == 0:
-            print(f"Inserted {inserted} records...")
+            print(f"Inserted: {inserted}")
 
     except Exception as e:
         print("❌ Error:", e)
@@ -84,5 +88,6 @@ for _, row in df.iterrows():
 conn.commit()
 conn.close()
 
-print("\n✅ Inserted:", inserted)
-print("⏭️ Skipped:", skipped)
+print("\n🚀 FINAL DATASET IMPORT")
+print("Inserted:", inserted)
+print("Skipped:", skipped)
