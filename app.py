@@ -1,7 +1,7 @@
 from flask import Flask, request, render_template, redirect
 import sqlite3
 from semantic_search import search,get_similar_projects,build_cache
-
+import os
 app = Flask(__name__)
 
 # ---------------- DB CONNECTION ----------------
@@ -358,4 +358,5 @@ def dashboard():
 
 # ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
