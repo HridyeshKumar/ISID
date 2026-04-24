@@ -1,44 +1,64 @@
-from sentence_transformers import SentenceTransformer
 import sqlite3
 import numpy as np
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# 🔥 LAZY MODEL LOAD
+model = None
 
+def get_model():
+    global model
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+        print("🔄 Loading model...")
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+    return model
+
+
+# ---------------- GLOBAL CACHE ----------------
 DATA = []
 EMBEDDINGS = None
 
 
+# ---------------- LOAD DATA ----------------
 def load_data():
     conn = sqlite3.connect("database.db")
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
-    cursor.execute("SELECT project_id, title, source FROM projects")
-    data = cursor.fetchall()
+    # 🔥 LIMIT DATA (VERY IMPORTANT)
+    cursor.execute("""
+        SELECT project_id, title, source 
+        FROM projects
+        ORDER BY score DESC
+        LIMIT 1000
+    """)
 
+    data = cursor.fetchall()
     conn.close()
     return data
 
 
+# ---------------- BUILD CACHE ----------------
 def build_cache():
     global DATA, EMBEDDINGS
 
     print("🔄 Building embeddings cache...")
-    DATA = load_data()
 
+    DATA = load_data()
     texts = [(d["title"] or "") + " " + (d["source"] or "") for d in DATA]
-    EMBEDDINGS = model.encode(texts, normalize_embeddings=True)
+
+    EMBEDDINGS = get_model().encode(texts, normalize_embeddings=True)
 
     print(f"✅ Cache built for {len(DATA)} projects")
 
 
+# ---------------- SEARCH ----------------
 def search(query, top_k=10):
     global DATA, EMBEDDINGS
 
     if EMBEDDINGS is None:
         build_cache()
 
-    q_vec = model.encode([query], normalize_embeddings=True)[0]
+    q_vec = get_model().encode([query], normalize_embeddings=True)[0]
 
     scores = []
     for i, emb in enumerate(EMBEDDINGS):
@@ -49,6 +69,7 @@ def search(query, top_k=10):
     return scores[:top_k]
 
 
+# ---------------- RECOMMEND ----------------
 def get_similar_projects(project_id, top_k=5):
     global DATA, EMBEDDINGS
 

@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template, redirect
 import sqlite3
-from semantic_search import search,get_similar_projects,build_cache
+from semantic_search import search,get_similar_projects
 import os
 app = Flask(__name__)
 
@@ -116,12 +116,7 @@ def recalculate_all_scores():
 init_db()
 seed_data()
 recalculate_all_scores()
-# 🔥 BUILD CACHE
-try:
-    print("🔄 Initializing AI search cache...")
-    build_cache()
-except Exception as e:
-    print("⚠️ Cache build failed:", e)
+
 # ---------------- HOME + FILTER ----------------
 @app.route("/")
 @app.route("/home")
