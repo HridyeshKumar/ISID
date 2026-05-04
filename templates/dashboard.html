@@ -1,100 +1,709 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>ISID Dashboard</title>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        ISID Intelligence Dashboard
+    </title>
 
     <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
     <!-- Chart.js -->
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Font -->
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        * {
+
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef2ff,
+                    #f8fafc
+                );
+
+            min-height: 100vh;
+        }
+
+        /* ---------------- NAVBAR ---------------- */
+
+        .navbar-custom {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0f172a,
+                    #1e3a8a
+                );
+
+            box-shadow:
+                0 4px 18px rgba(0,0,0,0.15);
+        }
+
+        .navbar-brand {
+
+            font-weight: 800;
+
+            font-size: 1.3rem;
+        }
+
+        /* ---------------- HERO ---------------- */
+
+        .hero {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1e40af,
+                    #2563eb,
+                    #3b82f6
+                );
+
+            color: white;
+
+            padding: 45px;
+
+            border-radius: 24px;
+
+            margin-bottom: 35px;
+
+            position: relative;
+
+            overflow: hidden;
+
+            box-shadow:
+                0 10px 35px rgba(37,99,235,0.25);
+        }
+
+        .hero::before {
+
+            content: "";
+
+            position: absolute;
+
+            top: -50px;
+            right: -50px;
+
+            width: 200px;
+            height: 200px;
+
+            background:
+                rgba(255,255,255,0.08);
+
+            border-radius: 50%;
+        }
+
+        .hero h1 {
+
+            font-weight: 800;
+
+            font-size: 2.5rem;
+        }
+
+        .hero p {
+
+            font-size: 1.05rem;
+
+            opacity: 0.92;
+
+            max-width: 800px;
+        }
+
+        /* ---------------- METRIC CARDS ---------------- */
+
+        .metric-card {
+
+            background: white;
+
+            border-radius: 22px;
+
+            padding: 28px;
+
+            text-align: center;
+
+            transition: 0.3s ease;
+
+            box-shadow:
+                0 4px 18px rgba(0,0,0,0.08);
+
+            border: none;
+        }
+
+        .metric-card:hover {
+
+            transform:
+                translateY(-6px);
+
+            box-shadow:
+                0 10px 28px rgba(0,0,0,0.12);
+        }
+
+        .metric-icon {
+
+            font-size: 2rem;
+
+            margin-bottom: 10px;
+        }
+
+        .metric-value {
+
+            font-size: 2.2rem;
+
+            font-weight: 800;
+
+            color: #2563eb;
+        }
+
+        .metric-label {
+
+            color: #6b7280;
+
+            margin-top: 8px;
+
+            font-weight: 500;
+        }
+
+        /* ---------------- ANALYTICS CARDS ---------------- */
+
+        .analytics-card {
+
+            background: white;
+
+            border-radius: 24px;
+
+            padding: 28px;
+
+            margin-bottom: 28px;
+
+            box-shadow:
+                0 4px 20px rgba(0,0,0,0.08);
+
+            transition: 0.3s ease;
+        }
+
+        .analytics-card:hover {
+
+            transform:
+                translateY(-3px);
+        }
+
+        .analytics-title {
+
+            font-size: 1.25rem;
+
+            font-weight: 700;
+
+            margin-bottom: 18px;
+
+            color: #111827;
+        }
+
+        /* ---------------- INSIGHTS ---------------- */
+
+        .insight-box {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #f8fafc,
+                    #eff6ff
+                );
+
+            border-left:
+                5px solid #2563eb;
+
+            padding: 20px;
+
+            border-radius: 16px;
+
+            margin-bottom: 15px;
+        }
+
+        .insight-box strong {
+
+            color: #1e3a8a;
+        }
+
+        /* ---------------- FOOTER ---------------- */
+
+        .footer {
+
+            text-align: center;
+
+            color: #6b7280;
+
+            margin-top: 50px;
+
+            padding-bottom: 30px;
+
+            font-size: 0.95rem;
+        }
+
+    </style>
+
 </head>
 
-<body style="background:#f5f7fa;">
+<body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand">📊 ISID Dashboard</span>
-    <a href="/home" class="btn btn-outline-light">⬅ Home</a>
+<!-- ================= NAVBAR ================= -->
+
+<nav class="navbar navbar-dark navbar-custom px-4 py-3">
+
+    <span class="navbar-brand">
+
+        🚀 ISID Intelligence Dashboard
+
+    </span>
+
+    <a
+        href="/home"
+        class="btn btn-outline-light rounded-pill px-4"
+    >
+        ⬅ Back to Home
+    </a>
+
 </nav>
+
 
 <div class="container mt-4">
 
-<h2 class="text-center mb-4">Analytics Overview</h2>
+    <!-- ================= HERO ================= -->
 
-<div class="row">
+    <div class="hero">
 
-    <!-- STATE CHART -->
-    <div class="col-md-6">
-        <div class="card p-3 shadow-sm">
-            <h5 class="text-center">Projects by State</h5>
-            <canvas id="stateChart"></canvas>
-        </div>
+        <h1>
+
+            AI Ecosystem Intelligence Platform
+
+        </h1>
+
+        <p class="mt-3">
+
+            Advanced semantic analytics platform for
+            discovering, analyzing, and mapping social
+            innovation ecosystems across India using
+            AI-powered search, graph intelligence,
+            SDG analytics, and multi-dimensional
+            impact scoring.
+
+        </p>
+
     </div>
 
-    <!-- CATEGORY CHART -->
-    <div class="col-md-6">
-        <div class="card p-3 shadow-sm">
-            <h5 class="text-center">Projects by Category</h5>
-            <canvas id="categoryChart"></canvas>
+
+    <!-- ================= METRICS ================= -->
+
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-3">
+
+            <div class="metric-card">
+
+                <div class="metric-icon">
+
+                    📍
+
+                </div>
+
+                <div class="metric-value">
+
+                    {{ state_data|length }}
+
+                </div>
+
+                <div class="metric-label">
+
+                    Active Regions
+
+                </div>
+
+            </div>
+
         </div>
+
+        <div class="col-md-3">
+
+            <div class="metric-card">
+
+                <div class="metric-icon">
+
+                    📚
+
+                </div>
+
+                <div class="metric-value">
+
+                    {{ category_data|length }}
+
+                </div>
+
+                <div class="metric-label">
+
+                    SDG Categories
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="metric-card">
+
+                <div class="metric-icon">
+
+                    🧠
+
+                </div>
+
+                <div class="metric-value">
+
+                    AI
+
+                </div>
+
+                <div class="metric-label">
+
+                    Semantic Intelligence
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="col-md-3">
+
+            <div class="metric-card">
+
+                <div class="metric-icon">
+
+                    🌐
+
+                </div>
+
+                <div class="metric-value">
+
+                    1059+
+
+                </div>
+
+                <div class="metric-label">
+
+                    Intelligence Records
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= CHARTS ================= -->
+
+    <div class="row">
+
+        <!-- STATE CHART -->
+
+        <div class="col-lg-6">
+
+            <div class="analytics-card">
+
+                <div class="analytics-title">
+
+                    🌍 Geographic Intelligence
+
+                </div>
+
+                <canvas id="stateChart"></canvas>
+
+            </div>
+
+        </div>
+
+        <!-- CATEGORY CHART -->
+
+        <div class="col-lg-6">
+
+            <div class="analytics-card">
+
+                <div class="analytics-title">
+
+                    📚 SDG Ecosystem Distribution
+
+                </div>
+
+                <canvas id="categoryChart"></canvas>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= EXTRA ANALYTICS ================= -->
+
+    <div class="row">
+
+        <div class="col-lg-12">
+
+            <div class="analytics-card">
+
+                <div class="analytics-title">
+
+                    📈 Intelligence Insights
+
+                </div>
+
+                <div class="insight-box">
+
+                    <strong>Semantic Discovery:</strong>
+
+                    AI-powered retrieval enables discovery
+                    of socially relevant innovation projects
+                    using natural language understanding.
+
+                </div>
+
+                <div class="insight-box">
+
+                    <strong>Knowledge Graph Analytics:</strong>
+
+                    Network intelligence maps hidden
+                    relationships between NGOs, SDGs,
+                    locations, and ecosystem actors.
+
+                </div>
+
+                <div class="insight-box">
+
+                    <strong>Impact Intelligence:</strong>
+
+                    Multi-dimensional scoring supports
+                    evidence-based analysis of social impact,
+                    innovation, sustainability, and scale.
+
+                </div>
+
+                <div class="insight-box">
+
+                    <strong>SDG Ontology Engine:</strong>
+
+                    Ontology-driven categorization enables
+                    thematic clustering and ecosystem-level
+                    intelligence analysis.
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <div class="footer">
+
+        Built with Flask • SQLite • FAISS • NLP •
+        NetworkX • Semantic AI Search • Graph Intelligence
+
     </div>
 
 </div>
 
-</div>
 
-<!-- DATA -->
-<script type="application/json" id="stateData">{{ state_data | tojson }}</script>
-<script type="application/json" id="categoryData">{{ category_data | tojson }}</script>
+<!-- ================= JSON DATA ================= -->
+
+<script
+    type="application/json"
+    id="stateData"
+>
+{{ state_data | tojson }}
+</script>
+
+<script
+    type="application/json"
+    id="categoryData"
+>
+{{ category_data | tojson }}
+</script>
+
+
+<!-- ================= CHARTS ================= -->
 
 <script>
-    const stateData = JSON.parse(document.getElementById('stateData').textContent);
-    const categoryData = JSON.parse(document.getElementById('categoryData').textContent);
 
-    // FIX: handle null values safely
-    const stateLabels = stateData.map(item => item.state || "Unknown");
-    const stateValues = stateData.map(item => item.count);
+    const stateData = JSON.parse(
 
-    const categoryLabels = categoryData.map(item => item.category || "Unknown");
-    const categoryValues = categoryData.map(item => item.count);
+        document.getElementById(
+            "stateData"
+        ).textContent
 
-    // STATE CHART
-    new Chart(document.getElementById("stateChart"), {
-        type: 'bar',
-        data: {
-            labels: stateLabels,
-            datasets: [{
-                label: 'Projects by State',
-                data: stateValues
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
+    );
+
+    const categoryData = JSON.parse(
+
+        document.getElementById(
+            "categoryData"
+        ).textContent
+
+    );
+
+    // ---------------- STATE ----------------
+
+    const stateLabels = stateData.map(
+        item => item.state || "Unknown"
+    );
+
+    const stateValues = stateData.map(
+        item => item.count
+    );
+
+    // ---------------- CATEGORY ----------------
+
+    const categoryLabels = categoryData.map(
+        item => item.category || "Unknown"
+    );
+
+    const categoryValues = categoryData.map(
+        item => item.count
+    );
+
+    // ---------------- BAR CHART ----------------
+
+    new Chart(
+
+        document.getElementById(
+            "stateChart"
+        ),
+
+        {
+
+            type: "bar",
+
+            data: {
+
+                labels: stateLabels,
+
+                datasets: [{
+
+                    label: "Projects",
+
+                    data: stateValues,
+
+                    borderWidth: 1,
+
+                    borderRadius: 8
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        display: false
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true
+                    }
+                }
             }
         }
-    });
+    );
 
-    // CATEGORY CHART
-    new Chart(document.getElementById("categoryChart"), {
-        type: 'bar',
-        data: {
-            labels: categoryLabels,
-            datasets: [{
-                label: 'Projects by Category',
-                data: categoryValues
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
+    // ---------------- DOUGHNUT ----------------
+
+    new Chart(
+
+        document.getElementById(
+            "categoryChart"
+        ),
+
+        {
+
+            type: "doughnut",
+
+            data: {
+
+                labels: categoryLabels,
+
+                datasets: [{
+
+                    data: categoryValues,
+
+                    borderWidth: 2
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        position: "bottom"
+                    }
+                }
             }
         }
-    });
+    );
+
 </script>
 
 </body>
+
 </html>

@@ -1,114 +1,468 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Project Detail</title>
 
-    <!-- Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<head>
+
+    <title>ISID - Project Detail</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        body {
+
+            background: #f4f7fb;
+        }
+
+        .navbar-custom {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0f172a,
+                    #1e3a8a
+                );
+        }
+
+        .main-card {
+
+            background: white;
+
+            border-radius: 18px;
+
+            padding: 35px;
+
+            box-shadow:
+                0 4px 18px rgba(0,0,0,0.08);
+
+            margin-bottom: 30px;
+        }
+
+        .project-title {
+
+            font-size: 2rem;
+
+            font-weight: 700;
+
+            margin-bottom: 18px;
+
+            color: #111827;
+        }
+
+        .summary {
+
+            color: #4b5563;
+
+            line-height: 1.8;
+
+            font-size: 1.05rem;
+
+            margin-bottom: 25px;
+        }
+
+        .info-box {
+
+            background: #f8fafc;
+
+            padding: 18px;
+
+            border-radius: 14px;
+
+            margin-bottom: 20px;
+        }
+
+        .info-title {
+
+            font-weight: 700;
+
+            margin-bottom: 8px;
+
+            color: #111827;
+        }
+
+        .custom-badge {
+
+            display: inline-block;
+
+            background: #dbeafe;
+
+            color: #1d4ed8;
+
+            padding: 7px 14px;
+
+            border-radius: 30px;
+
+            margin-right: 8px;
+
+            margin-bottom: 8px;
+
+            font-size: 0.9rem;
+        }
+
+        .score-card {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1e3a8a,
+                    #2563eb
+                );
+
+            color: white;
+
+            border-radius: 16px;
+
+            padding: 22px;
+
+            text-align: center;
+        }
+
+        .score-value {
+
+            font-size: 2rem;
+
+            font-weight: bold;
+        }
+
+        .recommend-card {
+
+            background: white;
+
+            border-radius: 14px;
+
+            padding: 20px;
+
+            margin-bottom: 18px;
+
+            box-shadow:
+                0 2px 10px rgba(0,0,0,0.06);
+
+            transition: 0.2s;
+        }
+
+        .recommend-card:hover {
+
+            transform: translateY(-3px);
+        }
+
+        .recommend-title a {
+
+            text-decoration: none;
+
+            font-weight: 700;
+
+            color: #111827;
+        }
+
+        .recommend-summary {
+
+            color: #4b5563;
+
+            margin-top: 10px;
+
+            line-height: 1.6;
+
+            max-height: 80px;
+
+            overflow: hidden;
+        }
+        .progress {
+
+            height: 12px;
+
+            border-radius: 20px;
+
+            background: rgba(255,255,255,0.25);
+        }
+
+        .progress-bar {
+
+            border-radius: 20px;
+        }
+    </style>
+
 </head>
 
-<body style="background:#f5f7fa;">
+<body>
 
 <!-- NAVBAR -->
-<nav class="navbar navbar-dark bg-dark px-3">
-    <span class="navbar-brand">🇮🇳 ISID</span>
-    <a href="/home" class="btn btn-outline-light">⬅ Home</a>
+
+<nav class="navbar navbar-dark navbar-custom px-4 py-3">
+
+    <span class="navbar-brand fw-bold">
+
+        🇮🇳 ISID
+
+    </span>
+
+    <a
+        href="/home"
+        class="btn btn-outline-light"
+    >
+        ⬅ Back to Home
+    </a>
+
 </nav>
+
 
 <div class="container mt-4">
 
-    <!-- MAIN PROJECT CARD -->
-    <div class="card p-4 shadow-sm mb-4">
+    <!-- MAIN PROJECT -->
 
-        <h2 class="mb-3">{{ project['title'] }}</h2>
-
-        <p class="text-muted">{{ project['source'] or "No description available" }}</p>
-
-        <hr>
+    <div class="main-card">
 
         <div class="row">
 
-            <div class="col-md-4">
-                <p><b>State:</b><br>
-                <span class="badge bg-primary">
-                    {{ project['state'].title() if project['state'] else "N/A" }}
-                </span></p>
+            <!-- LEFT -->
+
+            <div class="col-lg-8">
+
+                <div class="project-title">
+
+                    {{ project['title'] }}
+
+                </div>
+
+                <div class="summary">
+
+                    {{ project['source'][:1800] if project['source'] else "No description available." }}
+
+                </div>
+
+                <!-- TOPICS -->
+
+                <div class="info-box">
+
+                    <div class="info-title">
+
+                        📚 SDG / Topics
+
+                    </div>
+
+                    <span class="custom-badge">
+
+                        {{ project['topics'] or "No topics detected" }}
+
+                    </span>
+
+                </div>
+
+                <!-- LOCATIONS -->
+
+                <div class="info-box">
+
+                    <div class="info-title">
+
+                        🌍 Geographic Intelligence
+
+                    </div>
+
+                    {% for topic in project['topics'].split(",") %}
+
+                        {% if topic.strip() %}
+
+                        <span class="custom-badge">
+
+                            {{ topic.strip() }}
+
+                        </span>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                </div>
+
             </div>
 
-            <div class="col-md-4">
-                <p><b>Category:</b><br>
-                <span class="badge bg-success">
-                    {{ project['category'].title() if project['category'] else "N/A" }}
-                </span></p>
-            </div>
 
-            <div class="col-md-4">
-                <p><b>Status:</b><br>
-                <span class="badge bg-warning text-dark">
-                    {{ project['status'].title() if project['status'] else "N/A" }}
-                </span></p>
-            </div>
+            <!-- RIGHT -->
 
-        </div>
+            <div class="col-lg-4">
 
-        <div class="mt-3">
-            {% if project['url'] %}
-            <a href="{{ project['url'] }}" target="_blank" class="btn btn-primary">
-                🌐 Visit Website
-            </a>
-            {% endif %}
+                <!-- IMPACT -->
 
-            <a href="/edit/{{ project['project_id'] }}" class="btn btn-warning">
-                ✏ Edit
-            </a>
-        </div>
+                <div class="score-card mb-4">
 
-    </div>
+                    <div>
 
-    <!-- 🔥 SIMILAR PROJECTS -->
-    <div class="card p-4 shadow-sm">
+                        Impact Score
 
-        <h4 class="mb-3">🔍 Similar Projects</h4>
+                    </div>
 
-        {% if recommendations %}
+                    <div class="score-value">
 
-            <div class="row">
+                        {{ project['impact_score'] }}/10
 
-            {% for r in recommendations %}
-                <div class="col-md-6 mb-3">
-                    <div class="border p-3 rounded bg-light">
+                    </div>
+                    
+                    <div class="progress mt-3">
 
-                        <h6>
-                            <a href="/project/{{ r['project_id'] }}">
-                                {{ r['title'] }}
-                            </a>
-                        </h6>
-
-                        <small class="text-muted">
-                            {{ r['source'][:120] if r['source'] else "No description" }}...
-                        </small>
-
-                        <div class="mt-2">
-                            <span class="badge bg-secondary">
-                                {{ r['state'].title() if r['state'] else "N/A" }}
-                            </span>
-
-                            <span class="badge bg-info text-dark">
-                                {{ r['category'].title() if r['category'] else "N/A" }}
-                            </span>
+                        <div    class="progress-bar bg-light" role="progressbar">
                         </div>
 
                     </div>
+
                 </div>
-            {% endfor %}
+
+                <!-- ANALYTICS -->
+
+                <div class="info-box">
+
+                    <div class="info-title">
+
+                        📊 Intelligence Scores
+
+                    </div>
+
+                    <p>
+                        Innovation:
+                        <b>{{ project['innovation_score'] }}</b>
+                    </p>
+
+                    <p>
+                        Scale:
+                        <b>{{ project['scale_score'] }}</b>
+                    </p>
+
+                    <p>
+                        Sustainability:
+                        <b>{{ project['sustainability_score'] }}</b>
+                    </p>
+
+                    <p>
+                        Collaboration:
+                        <b>{{ project['collaboration_score'] }}</b>
+                    </p>
+
+                </div>
+
+                <!-- META -->
+
+                <div class="info-box">
+
+                    <div class="info-title">
+
+                        🏷 Project Metadata
+
+                    </div>
+
+                    <p>
+                        <b>State:</b>
+                        {{ project['state'] }}
+                    </p>
+
+                    <p>
+                        <b>Category:</b>
+                        {{ project['category'] }}
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        {{ project['status'] }}
+                    </p>
+
+                </div>
+
+                <!-- ACTIONS -->
+
+                {% if project['url'] %}
+
+                <a
+                    href="{{ project['url'] }}"
+                    target="_blank"
+                    class="btn btn-primary w-100 mb-2"
+                >
+                    🌐 Visit Website
+                </a>
+
+                {% endif %}
+
+                <a
+                    href="/edit/{{ project['project_id'] }}"
+                    class="btn btn-warning w-100"
+                >
+                    ✏ Edit Project
+                </a>
 
             </div>
 
-        {% else %}
-            <p>No similar projects found.</p>
-        {% endif %}
+        </div>
 
     </div>
+
+
+    <!-- RECOMMENDATIONS -->
+
+    <h3 class="mb-4">
+
+        🔍 Related Social Innovation Projects
+
+    </h3>
+
+    {% if recommendations %}
+
+        <div class="row">
+
+        {% for r in recommendations %}
+
+            <div class="col-lg-6">
+
+                <div class="recommend-card">
+
+                    <div class="recommend-title">
+
+                        <a href="/project/{{ r['project_id'] }}">
+
+                            {{ r['title'] }}
+
+                        </a>
+
+                    </div>
+
+                    <div class="recommend-summary">
+
+                        {{ r['source'][:220] if r['source'] else "No description available." }}...
+
+                    </div>
+
+                    <div class="mt-3">
+
+                        <span class="custom-badge">
+
+                            📚 {{ r['topics'] }}
+
+                        </span>
+
+                    </div>
+
+                    <div class="mt-2">
+
+                        ⭐ Impact:
+                        <b>{{ r['impact_score'] }}</b>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="alert alert-secondary">
+
+            No related projects found.
+
+        </div>
+
+    {% endif %}
 
 </div>
 

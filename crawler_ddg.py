@@ -7,7 +7,7 @@ import time
 from urllib.parse import urlparse
 
 from category_model import predict_category
-from scoring import calculate_score
+from scoring import calculate_dimension_scores
 
 
 # ---------------- DB ----------------
@@ -48,39 +48,14 @@ def is_valid_url(url):
 
 # ---------------- ADVANCED QUERIES ----------------
 queries = [
-    # Core NGOs
-    "list of NGOs in India with website",
-    "top NGOs in India education health",
-    "NGO directory India official websites",
-    "NGOs in Assam India",
-    "NGOs in Bihar rural development",
-    "NGOs in Kerala health projects",
-    "NGOs in Northeast India",
-    # Sector-based
-    "education NGOs India projects",
-    "health NGOs India projects",
-    "environment NGOs India sustainability",
-    "women empowerment NGOs India",
-    "child welfare NGOs India",
-
-    # Development
-    "rural development NGOs India",
-    "village development projects India NGO",
-
-    # Innovation
-    "social innovation projects India NGOs",
-    "social enterprises India NGO projects",
-
-    # Climate
-    "climate change NGOs India projects",
-    "sustainability NGOs India renewable energy",
-
-    # CSR + Government
-    "CSR projects India NGOs collaboration",
-    "government social schemes India NGOs",
-
-    # Global but India
-    "international NGOs working in India projects",
+    "social innovation India",
+    "women empowerment initiative India",
+    "rural education initiative India",
+    "climate sustainability project India",
+    "community development innovation India",
+    "healthcare social enterprise India",
+    "youth empowerment organization India",
+    "digital literacy rural India"
 ]
 
 
@@ -137,13 +112,13 @@ for url, title, desc in websites:
     category = predict_category(text)
     state = "india"
 
-    score = calculate_score(category, state, title, desc)
+    dimension_scores = calculate_dimension_scores(text)
 
     try:
         cursor.execute("""
             INSERT INTO projects 
-            (title, source, url, state, category, country, status, score)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (title, source, url, state, category, country, status, impact_score, innovation_score, scale_score, sustainability_score, collaboration_score)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             title,
             desc[:500],  # 🔥 better than "Web Discovery"
@@ -152,7 +127,11 @@ for url, title, desc in websites:
             category,
             "india",
             "active",
-            score
+            dimension_scores["impact_score"],
+            dimension_scores["innovation_score"],
+            dimension_scores["scale_score"],
+            dimension_scores["sustainability_score"],
+            dimension_scores["collaboration_score"]
         ))
 
         inserted += 1

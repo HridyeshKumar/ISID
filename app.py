@@ -1,32 +1,61 @@
 from flask import Flask, request, render_template, redirect
 import sqlite3
-from semantic_search import search,get_similar_projects
 import os
+from hybrid_recommender import hybrid_recommendations
+from semantic_search import (
+    search,
+    get_similar_projects,
+    build_cache
+)
+from collections import Counter
+import ast
 app = Flask(__name__)
 
+
 # ---------------- DB CONNECTION ----------------
+
 def get_db_connection():
-    conn = sqlite3.connect("database.db", check_same_thread=False)
+
+    conn = sqlite3.connect(
+        "database.db",
+        check_same_thread=False
+    )
+
     conn.row_factory = sqlite3.Row
+
     return conn
 
 
 # ---------------- INIT DB ----------------
+
 def init_db():
+
     conn = get_db_connection()
+
     cursor = conn.cursor()
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS projects (
+
         project_id INTEGER PRIMARY KEY AUTOINCREMENT,
+
         title TEXT,
         source TEXT,
         url TEXT,
+
         state TEXT,
         category TEXT,
         country TEXT,
         status TEXT,
-        score INTEGER DEFAULT 0
+
+        impact_score REAL DEFAULT 0,
+        innovation_score REAL DEFAULT 0,
+        scale_score REAL DEFAULT 0,
+        sustainability_score REAL DEFAULT 0,
+        collaboration_score REAL DEFAULT 0,
+
+        topics TEXT,
+        detected_locations TEXT
     )
     """)
 
@@ -34,176 +63,144 @@ def init_db():
     conn.close()
 
 
-# ---------------- SEED DATA ----------------
-def seed_data():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+# ---------------- INITIALIZE ----------------
 
-    cursor.execute("SELECT COUNT(*) FROM projects")
-    count = cursor.fetchone()[0]
-
-    if count == 0:
-        cursor.execute("""
-        INSERT INTO projects (title, source, url, state, category, country, status, score)
-        VALUES
-        ('Pratham', 'Education NGO', 'https://pratham.org', 'delhi', 'education', 'india', 'active', 40),
-        ('Goonj', 'Rural NGO', 'https://goonj.org', 'delhi', 'social', 'india', 'active', 30),
-        ('Akshaya Patra', 'Midday Meals', 'https://akshayapatra.org', 'karnataka', 'food', 'india', 'active', 35),
-        ('Teach For India', 'Education NGO', 'https://teachforindia.org', 'maharashtra', 'education', 'india', 'active', 45)
-        """)
-        conn.commit()
-
-    conn.close()
-
-
-# ---------------- SCORING FUNCTION ----------------
-def calculate_score(category, state, title):
-    score = 0
-
-    weights = {
-        "education": 30,
-        "food": 25,
-        "social": 20,
-        "health": 28
-    }
-    score += weights.get(category, 10)
-
-    high_priority_states = ["delhi", "maharashtra", "karnataka"]
-    if state in high_priority_states:
-        score += 10
-
-    title = (title or "").lower()
-
-    keywords = {
-        "child": 10,
-        "children": 10,
-        "women": 10,
-        "rural": 6,
-        "health": 8,
-        "education": 8,
-        "hunger": 9,
-        "poverty": 9,
-        "development": 5
-    }
-
-    for word, value in keywords.items():
-        if word in title:
-            score += value
-
-    return score
-
-
-def recalculate_all_scores():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM projects")
-    projects = cursor.fetchall()
-
-    for p in projects:
-        new_score = calculate_score(p["category"], p["state"], p["title"])
-
-        cursor.execute(
-            "UPDATE projects SET score=? WHERE project_id=?",
-            (new_score, p["project_id"])
-        )
-
-    conn.commit()
-    conn.close()
-
-
-# INIT
 init_db()
-seed_data()
-recalculate_all_scores()
+build_cache()
 
-# ---------------- HOME + FILTER ----------------
+
+# ---------------- HOME ----------------
+
 @app.route("/")
 @app.route("/home")
 def home():
-    query = request.args.get("q", "").lower()
-    state = request.args.get("state", "").lower()
-    category = request.args.get("category", "").lower()
-    status = request.args.get("status", "").lower()
-    page = int(request.args.get("page", 1))
 
-    limit = 5
-    offset = (page - 1) * limit
+    query = request.args.get("q", "").lower()
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    sql = "SELECT * FROM projects WHERE 1=1"
-    params = []
-
-    min_score = request.args.get("min_score")
-    if min_score:
-        sql += " AND score >= ?"
-        params.append(int(min_score))
+    # ---------------- SEMANTIC SEARCH ----------------
 
     if query:
+
         results = search(query)
-        data = [r[1] for r in results]
 
-        # still need dropdowns
-        cursor.execute("SELECT DISTINCT state FROM projects")
-        states = sorted([row[0] for row in cursor.fetchall() if row[0]])
+        cleaned_data = []
 
-        cursor.execute("SELECT DISTINCT category FROM projects")
-        categories = sorted([row[0] for row in cursor.fetchall() if row[0]])
+        for row in results:
+
+            row = dict(row)
+
+            # summary
+            summary = ""
+
+            if row.get("source"):
+
+                summary = (
+                    row["source"][:250] + "..."
+                )
+
+            row["summary"] = summary
+
+            # safe fallbacks
+            row["topics"] = (
+                str(row.get("topics") or "")
+                .replace("[", "")
+                .replace("]", "")
+                .replace("'", "")
+                .replace("_", " ")
+            )
+
+            row["detected_locations"] = (
+                str(row.get("detected_locations") or "")
+                .replace("[", "")
+                .replace("]", "")
+                .replace("'", "")
+            )
+
+            row["impact_score"] = (
+                row.get("impact_score") or 0
+            )
+
+            cleaned_data.append(row)
 
         conn.close()
 
         return render_template(
             "home.html",
-            data=data,
-            states=states,
-            categories=categories,
-            page=1
+            data=cleaned_data
         )
 
-    if state:
-        sql += " AND LOWER(state) LIKE ?"
-        params.append("%" + state + "%")
+    # ---------------- NORMAL DISPLAY ----------------
 
-    if category:
-        sql += " AND LOWER(category) LIKE ?"
-        params.append("%" + category + "%")
+    cursor.execute("""
+    SELECT *
+    FROM projects
+    ORDER BY impact_score DESC
+    LIMIT 50
+    """)
 
-    if status:
-        sql += " AND LOWER(status) LIKE ?"
-        params.append("%" + status + "%")
+    rows = cursor.fetchall()
 
-    sql += " ORDER BY score DESC LIMIT ? OFFSET ?"
-    params.extend([limit, offset])
+    cleaned_data = []
 
-    cursor.execute(sql, params)
-    data = cursor.fetchall()
+    for row in rows:
 
-    cursor.execute("SELECT DISTINCT state FROM projects")
-    states = sorted([row[0] for row in cursor.fetchall() if row[0]])
+        row = dict(row)
 
-    cursor.execute("SELECT DISTINCT category FROM projects")
-    categories = sorted([row[0] for row in cursor.fetchall() if row[0]])
+        summary = ""
+
+        if row.get("source"):
+
+            summary = (
+                row["source"][:250] + "..."
+            )
+
+        row["summary"] = summary
+
+        row["topics"] = (
+            str(row.get("topics") or "")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("'", "")
+            .replace("_", " ")
+        )
+
+        row["detected_locations"] = (
+            str(row.get("detected_locations") or "")
+            .replace("[", "")
+            .replace("]", "")
+            .replace("'", "")
+        )
+
+        row["impact_score"] = (
+            row.get("impact_score") or 0
+        )
+
+        cleaned_data.append(row)
 
     conn.close()
 
     return render_template(
         "home.html",
-        data=data,
-        states=states,
-        categories=categories,
-        page=page
+        data=cleaned_data
     )
 
 
 # ---------------- PROJECT DETAIL ----------------
+
 @app.route("/project/<int:id>")
 def project_detail(id):
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM projects WHERE project_id = ?", (id,))
+    cursor.execute(
+        "SELECT * FROM projects WHERE project_id=?",
+        (id,)
+    )
+
     project = cursor.fetchone()
 
     conn.close()
@@ -211,9 +208,10 @@ def project_detail(id):
     if not project:
         return "Project not found", 404
 
-    # 🔥 AI recommendations
-    results = get_similar_projects(id)
-    recommendations = [r[1] for r in results]
+    project = dict(project)
+
+    # AI recommendations
+    recommendations = hybrid_recommendations(id)
 
     return render_template(
         "project_detail.html",
@@ -223,135 +221,333 @@ def project_detail(id):
 
 
 # ---------------- ADD PROJECT ----------------
+
 @app.route("/add_project", methods=["POST"])
 def add_project():
+
     title = request.form["title"]
+
     source = request.form["source"]
+
     url = request.form["url"]
+
     state = request.form["state"].lower()
+
     category = request.form["category"].lower()
+
     country = request.form["country"].lower()
+
     status = request.form["status"].lower()
 
-    score = calculate_score(category, state, title)
-
     conn = get_db_connection()
+
     cursor = conn.cursor()
 
-    cursor.execute(
-        """INSERT INTO projects 
-        (title, source, url, state, category, country, status, score) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (title, source, url, state, category, country, status, score)
+    cursor.execute("""
+    INSERT INTO projects (
+
+        title,
+        source,
+        url,
+        state,
+        category,
+        country,
+        status
+
     )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+
+        title,
+        source,
+        url,
+        state,
+        category,
+        country,
+        status
+    ))
 
     conn.commit()
     conn.close()
+
+    build_cache()
 
     return redirect("/home")
 
 
 # ---------------- EDIT PROJECT ----------------
+
 @app.route("/edit/<int:id>", methods=["GET", "POST"])
 def edit_project(id):
+
     conn = get_db_connection()
+
     cursor = conn.cursor()
 
     if request.method == "POST":
+
         title = request.form["title"]
+
         source = request.form["source"]
+
         url = request.form["url"]
+
         state = request.form["state"].lower()
+
         category = request.form["category"].lower()
+
         country = request.form["country"].lower()
+
         status = request.form["status"].lower()
 
-        score = calculate_score(category, state, title)  # ✅ FIXED
+        cursor.execute("""
+        UPDATE projects
+        SET
 
-        cursor.execute(
-            """UPDATE projects 
-            SET title=?, source=?, url=?, state=?, category=?, country=?, status=?, score=? 
-            WHERE project_id=?""",
-            (title, source, url, state, category, country, status, score, id)
-        )
+            title=?,
+            source=?,
+            url=?,
+            state=?,
+            category=?,
+            country=?,
+            status=?
+
+        WHERE project_id=?
+        """, (
+
+            title,
+            source,
+            url,
+            state,
+            category,
+            country,
+            status,
+            id
+        ))
 
         conn.commit()
         conn.close()
 
+        build_cache()
+
         return redirect("/home")
 
-    cursor.execute("SELECT * FROM projects WHERE project_id=?", (id,))
+    cursor.execute(
+        "SELECT * FROM projects WHERE project_id=?",
+        (id,)
+    )
+
     project = cursor.fetchone()
 
     conn.close()
 
-    return render_template("project_edit.html", project=project)
-
-
-# ---------------- TOP PROJECTS ----------------
-@app.route("/top")
-def top_projects():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT * FROM projects
-        WHERE score IS NOT NULL
-        ORDER BY score DESC
-        LIMIT 20
-    """)
-
-    data = cursor.fetchall()
-    conn.close()
-
-    return render_template("home.html", data=data)
-@app.route("/delete/<int:id>")
-def delete_project(id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM projects WHERE project_id=?", (id,))
-    conn.commit()
-    conn.close()
-
-    return redirect("/home")
-@app.route("/rebuild-cache")
-def rebuild_cache():
-    from semantic_search import build_cache
-    build_cache()
-    return "Cache rebuilt successfully!"
-# ---------------- DASHBOARD ----------------
-@app.route("/dashboard")
-def dashboard():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT state, COUNT(*) as count 
-        FROM projects 
-        GROUP BY state 
-        ORDER BY count DESC
-    """)
-    state_data = [dict(row) for row in cursor.fetchall()]
-
-    cursor.execute("""
-        SELECT category, COUNT(*) as count 
-        FROM projects 
-        GROUP BY category 
-        ORDER BY count DESC
-    """)
-    category_data = [dict(row) for row in cursor.fetchall()]
-
-    conn.close()
-
     return render_template(
-        "dashboard.html",
-        state_data=state_data,
-        category_data=category_data
+        "project_edit.html",
+        project=project
     )
 
 
+# ---------------- DELETE PROJECT ----------------
+
+@app.route("/delete/<int:id>")
+def delete_project(id):
+
+    conn = get_db_connection()
+
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "DELETE FROM projects WHERE project_id=?",
+        (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    build_cache()
+
+    return redirect("/home")
+
+
+# ---------------- REBUILD CACHE ----------------
+
+@app.route("/rebuild-cache")
+def rebuild_cache():
+
+    build_cache()
+
+    return "✅ Cache rebuilt successfully!"
+
+
+# ---------------- DASHBOARD ----------------
+
+@app.route("/dashboard")
+def dashboard():
+
+    import ast
+    import sqlite3
+
+    conn = sqlite3.connect("database.db")
+
+    conn.row_factory = sqlite3.Row
+
+    cursor = conn.cursor()
+
+    # ---------------- LOAD PROJECTS ----------------
+
+    cursor.execute("""
+
+    SELECT
+
+        detected_locations,
+        topics
+
+    FROM projects
+
+    """)
+
+    projects = cursor.fetchall()
+
+    conn.close()
+
+    # ---------------- COUNTERS ----------------
+
+    location_counts = {}
+
+    topic_counts = {}
+
+    # ---------------- PROCESS PROJECTS ----------------
+
+    for project in projects:
+
+        # ---------- LOCATIONS ----------
+
+        locations = project["detected_locations"]
+
+        if locations:
+
+            try:
+
+                locations = ast.literal_eval(
+                    locations
+                )
+
+            except:
+
+                locations = []
+
+            for loc in locations:
+
+                loc = str(loc).strip()
+
+                if loc:
+
+                    location_counts[loc] = (
+
+                        location_counts.get(loc, 0) + 1
+                    )
+
+        # ---------- TOPICS ----------
+
+        topics = project["topics"]
+
+        if topics:
+
+            try:
+
+                topics = ast.literal_eval(
+                    topics
+                )
+
+            except:
+
+                topics = []
+
+            for topic in topics:
+
+                topic = str(topic).strip()
+
+                if topic:
+
+                    topic_counts[topic] = (
+
+                        topic_counts.get(topic, 0) + 1
+                    )
+
+    # ---------------- FORMAT STATE DATA ----------------
+
+    state_data = sorted(
+
+        [
+
+            {
+
+                "state": key,
+
+                "count": value
+
+            }
+
+            for key, value in location_counts.items()
+
+        ],
+
+        key=lambda x: x["count"],
+
+        reverse=True
+
+    )[:10]
+
+    # ---------------- FORMAT CATEGORY DATA ----------------
+
+    category_data = sorted(
+
+        [
+
+            {
+
+                "category": key,
+
+                "count": value
+
+            }
+
+            for key, value in topic_counts.items()
+
+        ],
+
+        key=lambda x: x["count"],
+
+        reverse=True
+
+    )[:10]
+
+    # ---------------- RENDER TEMPLATE ----------------
+
+    return render_template(
+
+        "dashboard.html",
+
+        state_data=state_data,
+
+        category_data=category_data
+    )
+@app.route("/graph")
+def graph():
+
+    return render_template(
+
+        "interactive_graph.html"
+    )
 # ---------------- RUN ----------------
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+
+    port = int(
+        os.environ.get("PORT", 10000)
+    )
+
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )

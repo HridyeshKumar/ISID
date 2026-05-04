@@ -7,3 +7,8 @@ sentence-transformers
 scikit-learn
 numpy
 ddgs
+faiss-cpu
+spacy
+networkx
+matplotlib
+schedule
